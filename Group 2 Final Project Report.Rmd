@@ -1,0 +1,333 @@
+---
+title: "OPIM 5603 — Statistics in Business Analytics
+University of Connecticut - Final Project"
+author: "Group 2 (Jonathan Reeve, Eric Chajon, Anna Pirogova, Rishank Chetty, Haoming Zhang)"
+date: "04/21/2024"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+# Executive Summary: The housing market represents a critical aspect of the economy, reflecting both local and national economic conditions, demographic trends, and consumer preferences. This project aims to investigate key trends and factors influencing housing prices using a comprehensive dataset encompassing diverse attributes such as property size, location, and structural characteristics. The dataset comprises over 100,000 entries, capturing details including housing status (ready for sale or build), number of bedrooms and bathrooms, acreage, city, state, zip code, house size, previous sale date, and housing price. 
+
+# By leveraging this dataset, our research looks to address fundamental questions regarding housing market dynamics. Specifically, we will assess the impact of various housing attributes on price fluctuations and identify the attributes that have the greatest and least effect on the price. We will explore different model performances of numeric variables with respect to the housing prices, examine correlations between housing prices and property size or living space, and evaluate the predictive capabilities of various different models. Prior to analysis, extensive data exploration and preparation are essential to ensure the quality and reliability of our findings. This will involve examining the structure of the dataset, checking for missing values, and identifying any outliers  that may require further investigation. Overall, by shedding light on these aspects, our project aims to contribute valuable insights into the factors driving housing prices and market trends, informing individuals ranging from homebuyers to policymakers and real estate professionals.
+```
+
+
+```{r}
+# The first section of our project entails loading the data set and cleaning it up. 
+# loading the data set 
+library(readr)
+realtor_data <- read_csv("Downloads/realtor-data (1).csv")
+View(realtor_data_1_)
+```
+
+
+```{r}
+# Missing Value Analysis 
+sum(is.na(realtor_data))
+summary(is.na(realtor_data))
+# Deleting duplicate values
+updated_realtor_data <- unique(realtor_data)
+summary(updated_realtor_data)
+view(updated_realtor_data)
+# When doing an analysis of the data it was noticed that duplicate values were found. This can cause our data to be skewed so we needed to find a way to delete the duplicates. 
+
+# Missing Value Analysis After Deleting Duplicate Values 
+sum(is.na(updated_realtor_data))
+summary(is.na(updated_realtor_data))
+
+# This section analyzes the missing data and then removes it. Our team chose the house size and previously sold date as the attributes that were the most important to us. By removing the data that does not have a previously sold date we are also removing all of the values that are ready for build and not ready for sale. Additionally by removing values that do not have a house size we are removing data that does not have a physical house for sale.
+
+# removes values that have an N/A for house size 
+MISSING <- is.na(updated_realtor_data$house_size)
+sum(MISSING)
+realtor_data_NA <- subset(updated_realtor_data, 
+                          subset = !MISSING)
+nrow(realtor_data_NA)
+
+# summary of dataset after removing N/A for house size and duplicate values
+summary(realtor_data_NA)
+
+# removes values that have N/A for previously sold date 
+MISSING <- is.na(realtor_data_NA$prev_sold_date)
+sum(MISSING)
+realtor_data_NA1 <- subset(realtor_data_NA, 
+                           subset = !MISSING)
+nrow(realtor_data_NA1)
+
+# summary of dataset after removing N/A for house size and prev. sold date and duplicate values
+
+summary(realtor_data_NA1)
+
+# Prior to running the code above the dataset had a total of 100,000 entities. After removing the duplicates the remaining values were a total of 11,290. After we removed the entities that had NA values for both the house size as well as the previously sold date we had a total of 5,022 remaining
+```
+
+
+```{r}
+# To do an overall analysis of the data the below functions were used. This function takes the individual columns and does a statistical analysis that provides us with a snapshot of the data and gives us data such as minimum , maximum, median, mean and maximum values. Doing an overall summary analysis of the data set gives you a starting point as well as values that you can compare to when doing your analysis. An example of something that you can see provided in the overall summary is the maximum, minimum as well as median price of houses sold across all states. This data could be used by a realtor to help determine what price would be reasonable to charge for a house. Another thing that can be seen with running the code below is how many NA’s you have in that particular column. That is good to know if you want to sort your data to not include NA values for that particular data set since they may interfere with your analysis. The length summary you can see in the city and state analysis gives you an idea of how much data you actually have in that section. 
+
+summary(realtor_data_NA1$bed)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+# 1.000   3.000   3.000   3.521   4.000  33.000      45 
+
+
+summary(realtor_data_NA1$bath)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+# 1.000   2.000   2.000   2.453   3.000  19.000      47 
+
+summary(realtor_data_NA1$prev_sold_date)
+# Length     Class      Mode 
+# 5022 character character 
+
+summary(realtor_data_NA1$house_size)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 299    1243    1688    2123    2517   21500 
+
+summary(realtor_data_NA1$price)
+# Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+# 10000   245000   335000   497284   485000 60000000 
+
+summary(realtor_data_NA1$acre_lot)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+# 0.000   0.170   0.350   2.354   1.000 400.000     616 
+
+summary(realtor_data_NA1$city)
+# Length     Class      Mode 
+# 5022 character character        #tells you the overall length of the data set 
+
+summary(realtor_data_NA1$state)
+# Length     Class      Mode 
+# 5022 character character  #tells you the overall length of the data set 
+
+# One hypothesis that is yet to be answered is what attribute affects the price of the house the most. Is it the number of beds, number of baths , number of acres etc.To find the answer to this question we will use multiple regression analysis for the individual attributes. We will then see what multiple R-squared values are the highest which will show us what attributes affect the data the most heavily. 
+
+lm.realtor_data <- lm(price ~ bed, data = realtor_data_NA1)
+
+summary(lm.realtor_data)
+
+# Multiple R squared value is 0.0526
+
+
+lm.realtor_data <- lm(price ~ bath, data = realtor_data_NA1)
+
+summary(lm.realtor_data)
+# Multiple R-squared:  0.1865
+
+lm.realtor_data <- lm(price ~ acre_lot, data = realtor_data_NA1)
+
+summary(lm.realtor_data)
+# Multiple R-squared:  0.3884
+
+lm.realtor_data <- lm(price ~ city, data = realtor_data_NA1)
+
+summary(lm.realtor_data)
+
+# Multiple R-squared:  0.1951
+
+lm.realtor_data <- lm(price ~ state, data = realtor_data_NA1)
+
+summary(lm.realtor_data)
+
+# Multiple R-squared:  0.01431
+
+lm.realtor_data <- lm(price ~ zip_code, data = realtor_data_NA1)
+
+summary(lm.realtor_data)
+
+# Multiple R-squared:  0.0001056
+
+lm.realtor_data <- lm(price ~ house_size, data = realtor_data_NA1)
+
+summary(lm.realtor_data)
+
+# Multiple R-squared:  0.2682
+
+lm.realtor_data <- lm(price ~ prev_sold_date, data = realtor_data_NA1)
+
+summary(lm.realtor_data)
+
+# Multiple R-squared:  0.8749
+
+# Based on the multiple regression analysis results you can see that previously sold dates as well as the acre lot size affect the price the most. On the other hand the zip code as well as the state affect the price the least. This gives you as the realtor an idea of what attributes to focus on the most when determining the price of the house.
+```
+
+
+```{r}
+# Creation of a multiple linear regression model using only the numeric variables in the data set (bed, bath, acre lot, and house size)
+lm_model <- lm(realtor_data_NA1$price ~ realtor_data_NA1$bed + realtor_data_NA1$bath + realtor_data_NA1$acre_lot + realtor_data_NA1$house_size, data = realtor_data_NA1)
+
+# Summary retrieval of model parameters
+summary(lm_model)
+# Multiple R-squared: 0.547, Adjusted R-squared: 0.5466
+
+# Creation of a generalized linear regression model using the same set of numeric variables 
+glm_model <- glm(realtor_data_NA1$price ~ realtor_data_NA1$bed + realtor_data_NA1$bath + realtor_data_NA1$acre_lot + realtor_data_NA1$house_size, data = realtor_data_NA1, family = gaussian())
+summary(glm_model)
+# Null deviance: 6.2976e+15  on 4355  degrees of freedom
+# Residual deviance: 2.8525e+15  on 4351  degrees of freedom
+
+glm_summary <- summary(glm_model)
+null_deviance <- glm_summary$null.deviance
+residual_deviance <- glm_summary$residual.deviance
+glm_r_sqaured_equiv <- 1 - (null_deviance / residual_deviance)
+# glm_r_square_equiv: 0.547
+
+# The glm model does not directly give us any kind of r-squared value than does the lm model since r-squared is a measurement used to specifically interpret variance for linear regressions while we use Gaussian, namely normal,  distribution for the glm model.  However, we can calculate a quasi-r-squared value using two deviance values. When we compare the two models, we get very similar results in r-squared values from both models, suggesting that in terms of accuracy and consistency both models perform satisfactorily on the selected variables. However, since the glm model summary provides us with null and residual deviance, which are indicators of how well the response is fitted in the models. This set of values provides us with more on model fitting. We also need to take into account that the glm model presents a more flexible framework when modeling a variety of variables. In conclusion, the glm model would be favored in this case for its flexibility and tolerance on variable inputs.
+```
+
+
+```{r}
+# Seeing the overall picture of USA housing prices w.r.t. Locations:
+# Used dplyr package to process and summarize data a bit more
+library(dplyr)
+
+# Grouped data by state and zip code, then summarized average and median prices
+price_summary_NA1 <- realtor_data_NA1 %>%
+  group_by(state, zip_code) %>%
+  summarise(
+    average_price = mean(price,na.rm = TRUE),
+    median_price = median(price, na.rm = TRUE),
+    count = n()
+  ) %>%
+  arrange(desc(average_price))
+View(price_summary_NA1)
+
+# Visual for a graphical representation of the housing prices across states
+# ggplot2
+# Plotting average prices by state
+ggplot(price_summary_NA1, aes(x = reorder(state, -average_price), y = average_price)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "State", y = "Average Price", title = "Average Housing Prices by State")
+
+# Detailed analysis at the zip code level within particular states of interest
+# Filter for a specific state and plot by zip code
+ny_prices_NA1 <- price_summary_NA1 %>% filter(state == "New York")
+
+ggplot(ny_prices_NA1, aes(x = reorder(zip_code, -average_price), y = average_price)) +
+  geom_bar(stat = "identity", fill = "green") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Zip Code", y = "Average Price", title = "Average Housing Prices by Zip Code in NY")
+ny_prices_NA1
+
+
+# Looking into Puerto Rico Zipcodes
+# Filter for a specific state and plot by zip code
+PR_prices_NA1 <- price_summary_NA1 %>% filter(state == "Puerto Rico")
+
+ggplot(PR_prices_NA1, aes(x = reorder(zip_code, -average_price), y = average_price)) +
+  geom_bar(stat = "identity", fill = "green") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Zip Code", y = "Average Price", title = "Average Housing Prices by Zip Code in PR")
+PR_prices_NA1
+
+# When performing an analysis of the housing prices across the different states you can identify Massachusetts as having the highest average housing prices compared to the other states in the dataset. With Connecticut coming in second and New York coming in third. This shows home buyers states which state will be better suited for their budget. Along with this, if a home buyer wants to look into a particular area within a certain state they can do that by looking at the average price per zip code within the state. Above is a bar chart that illustrates the average price per zipcode in NY.
+```
+
+
+```{r}
+# Can we predict housing prices based on the features?
+# Convert categorical variables to factors if necessary. One of the main purposes for doing this is to store data in RStudio more efficiently than character vectors. This allows us to save memory and also improve the performance of our analysis of this dataset.
+
+realtor_data$state <- as.factor(realtor_data$state)
+realtor_data$city <- as.factor(realtor_data$city)
+
+# Split the dataset into training and testing sets, One is for training the model and the other is for evaluating its performance.
+set.seed(123) # for reproducibility
+train_indices <- sample(1:nrow(realtor_data), 0.8 * nrow(realtor_data))
+train_data <- realtor_data[train_indices, ]
+test_data <- realtor_data[-train_indices, ]
+
+# Train linear regression model. Choosing the appropriate model to later on use the predict function. Other options that could be used include decision trees and gradient boosting.
+lm_model <- lm(price ~ bed + bath + acre_lot + house_size, data = train_data)
+
+summary(lm_model)
+# Make predictions on the testing set
+predictions <- predict(lm_model, newdata = test_data)
+
+# Evaluate model performance. Assesses the average squared difference between the observed and predicted values.
+mse <- mean((test_data$price - predictions)^2)
+rsquared <- summary(lm_model)$r.squared
+
+print(paste("Mean Squared Error (MSE):", mse))
+print(paste("R-squared:", rsquared))
+
+# The R-Squared for this linear model came out to be 0.2467, showing that there is a relatively low correlation in this specific model. This isn’t necessarily surprising for a couple of reasons. One being that it could mean that there’s a lot of unexplained variability that this model doesn’t capture.
+
+# Evaluating the model
+predicted_prices <- predict(lm_model, newdata = test_data)
+
+# Calculating the Root Mean Square Error (RMSE) to determine how well the model predicts quantitative data
+rmse <- sqrt(mean((predicted_prices - test_data$price)^2))
+rmse
+
+# View coefficients
+coefficients(lm_model)
+
+# The analysis provided above gives us insight into the performance and interpretation of the linear regression model that was trained on this dataset. We first needed to convert categorical variables to store factors if necessary, and we only decided on doing the state and city column. After completing a prediction analysis for the linear regression model, we are given that the R-Squared value for this model is 0.2467, which isn’t necessarily the strongest correlation. Although we can use the predict function to get a general idea of what future house prices/selling prices could be, we shouldn’t solely rely on this method to help us predict what the future price/selling price would be for the remaining entities.
+```
+
+
+```{r}
+# Fit a linear regression model predicting 'price' using 'acre_lot' and 'house_size' as predictors
+fit<- lm(realtor_data$price ~ realtor_data$acre_lot + realtor_data$house_size, data = realtor_data)
+summary(fit)
+
+# Fit a linear regression model predicting 'price' using 'acre_lot' as the predictor
+fit<- lm(realtor_data$price ~ realtor_data$acre_lot, data = realtor_data)
+summary(fit)
+
+# Fit a linear regression model predicting 'price' using 'house_size' as the predictor
+fit<- lm(realtor_data$price ~ realtor_data$house_size, data = realtor_data)
+summary(fit)
+
+# Call:
+# lm(formula = realtor_data$price ~ realtor_data$acre_lot + realtor_data$house_size, 
+#    data = realtor_data)
+
+# Residuals:
+#      Min        1Q    Median        3Q       Max 
+# -34711983   -275019   -161145     22913  59008989 
+
+# Coefficients:
+#                         Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)             4.275e+05  4.408e+03   96.98  < 2e-16 ***
+# realtor_data$acre_lot   3.200e+01  7.126e+00    4.49 7.13e-06 ***
+# realtor_data$house_size 2.933e+01  6.655e-01   44.07  < 2e-16 ***
+
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+# Residual standard error: 1021000 on 61314 degrees of freedom
+#  (38683 observations deleted due to missingness)
+# Multiple R-squared:  0.03135,	Adjusted R-squared:  0.03132 
+# F-statistic: 992.4 on 2 and 61314 DF,  p-value: < 2.2e-16
+
+# The provided code leverages linear regression modeling to investigate correlations between housing prices and property characteristics (specifically acreage and living space) using the lm() function in R. By fitting a multiple linear regression model (lm(realtor_data$price ~ realtor_data$acre_lot + realtor_data$house_size, data = realtor_data)) with price as the dependent variable and acre_lot and house_size as predictors, and subsequently examining the model summary (summary(fit)), we can assess the individual impacts of acreage and house size on housing prices while controlling for each other. Additionally, by fitting separate simple linear regression models for price against acre_lot and house_size (lm(realtor_data$price ~ realtor_data$acre_lot, data = realtor_data) and lm(realtor_data$price ~ realtor_data$house_size, data = realtor_data)) and inspecting their summaries, we can directly evaluate the relationships between housing prices and each property characteristic independently. The coefficients, standard errors, and significance levels from these analyses provide insights into the magnitude and significance of these correlations, aiding in the understanding of how property size and living space influence housing prices.
+
+# There is evidence of a statistically significant positive correlation between housing prices and both property size (acre_lot) and living space (house_size).
+
+# Each additional unit of acreage or living space is associated with a corresponding increase in housing price, as indicated by the positive coefficients and low p-values.
+
+# However, the overall model fit (R-squared) suggests that factors beyond acreage and living space likely contribute to variations in housing prices, emphasizing the complexity of pricing determinants in real estate markets.
+```
+
+
+```{r}
+# Conclusion and recommendation: The analysis revealed significant correlations between housing prices and various property characteristics. Specifically, attributes like acreage and house size were found to have a positive impact on housing prices, as indicated by the coefficients in linear regression models. These findings suggest that larger properties and living spaces tend to command higher prices in the housing market.
+
+# Furthermore, the analysis looked into variations in housing prices, highlighting differences across states and zip codes. Visualizations of average housing prices by state and zip code provided insights into regional price disparities, emphasizing the importance of location in determining property values. The exploration of model fitting and evaluation showed the effectiveness of linear regression in predicting housing prices based on key attributes such as bedrooms, bathrooms, acreage, and house size. The models showed varying degrees of explanatory power, indicating the complexity of factors influencing housing prices beyond the measured attributes.
+
+# Overall, these analyses contribute to a greater understanding of the housing market dynamics, looking at the significance of data exploration, regression modeling, and visualization in studying housing price trends. The insights gained can convey real estate professionals and policymakers in making informed decisions regarding pricing strategies, investment opportunities, and housing policies tailored to specific regions and property characteristics. This effort highlights the nature of housing market research, integrating statistical analysis, insights, and predictive modeling to generate actionable insights for stakeholders in the real estate industry.
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
